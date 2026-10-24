@@ -191,7 +191,7 @@ async function tx(label, functionName, args = [], value) {
         break;
       } catch (e) {
         const msg = `${e.details || ''} ${e.shortMessage || ''} ${e.message || ''}`;
-        if (attempt < 20 && /insufficient balance/i.test(msg)) {
+        if (!useMM && attempt < 20 && /insufficient balance/i.test(msg)) {
           await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
@@ -697,9 +697,9 @@ async function onboard() {
     if (st.bal.monFree + st.bal.monLocked === 0n) {
       // Monad "reserve balance": 10 MON altındaki cüzdan, son ~3 blokta işlem yaptıysa
       // değer gönderen işlemi geri çevrilir. tTRY işleminden sonra biraz bekle, gerekirse tekrar dene.
-      await new Promise((x) => setTimeout(x, 2500));
+      await new Promise((x) => setTimeout(x, useMM ? 4000 : 2500));
       let d;
-      for (let i = 0; ; i++) {
+      for (let i = useMM ? 3 : 0; ; i++) { // MetaMask'ta otomatik tekrar yok: her deneme yeni onay penceresi açar
         try {
           d = await tx('0,1 MON yatırıldı', 'deposit', [], parseEther('0.1'));
           break;
