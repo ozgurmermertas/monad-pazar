@@ -350,18 +350,16 @@ body {
 /* alt şerit: koyu kobalt cam */
 .txbar { background: rgba(8, 20, 52, 0.72); backdrop-filter: blur(6px); border-top: 1px solid rgba(255, 255, 255, 0.08); }
 
-/* grafik: gece kobaltı panel */
+/* grafik: antrasit panel (net okunsun) */
 .chart-panel {
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1'%3E%3Crect x='12' y='12' width='20' height='20'/%3E%3Crect x='12' y='12' width='20' height='20' transform='rotate(45 22 22)'/%3E%3C/g%3E%3C/svg%3E"),
-    linear-gradient(160deg, #1a3a8c 0%, #0f2462 100%);
+  background: linear-gradient(180deg, #23262d 0%, #181a1f 100%);
   color: #fff;
 }
 .chart-panel .panel-head h2 { color: #fff; }
-.chart-panel .panel-head h2::before { background: #9d8cff; }
+.chart-panel .panel-head h2::before { background: #8f9bb3; }
 .chart-panel .hint { color: rgba(255, 255, 255, 0.6); }
 .chart-panel .tf { background: rgba(255, 255, 255, 0.1); }
 .chart-panel .tf button { color: rgba(255, 255, 255, 0.7); }
 .chart-panel .tf button:hover { color: #fff; }
-.chart-panel .tf button.active { background: #fff; color: var(--cobalt-deep); }
+.chart-panel .tf button.active { background: #fff; color: #181a1f; }
 .center > .order-panel { border-top: 0; }

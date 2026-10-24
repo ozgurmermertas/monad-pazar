@@ -468,9 +468,9 @@ function renderChart() {
   const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (h - padT - padB);
 
   // ızgara + fiyat ekseni
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.10)';
   ctx.lineWidth = 1;
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
   ctx.textAlign = 'left';
   for (let i = 0; i <= 3; i++) {
     const v = lo + ((hi - lo) * i) / 3;
@@ -512,7 +512,7 @@ function renderChart() {
   ctx.fill();
   path();
   ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = 2.5;
   ctx.stroke();
   // işlem noktaları
   ctx.fillStyle = color;
@@ -534,7 +534,7 @@ function renderChart() {
   ctx.setLineDash([]);
   ctx.fillStyle = color;
   ctx.fillRect(w - padR + 2, ly - 9, padR - 4, 18);
-  ctx.fillStyle = '#0f1e3d';
+  ctx.fillStyle = '#181a1f';
   ctx.textAlign = 'left';
   ctx.font = '600 11px "Azeret Mono", monospace';
   ctx.fillText(nf(last), w - padR + 7, ly + 4);
