@@ -1,0 +1,17 @@
+{
+  "name": "monad-pazar",
+  "version": "0.1.0",
+  "description": "Fully on-chain order book exchange on Monad",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node server.mjs",
+    "deploy": "node scripts/pazar.mjs deploy",
+    "selftest": "node scripts/pazar.mjs selftest",
+    "seed": "node scripts/pazar.mjs seed"
+  },
+  "dependencies": {
+    "solc": "^0.8.38",
+    "viem": "^2.57.10"
+  }
+}

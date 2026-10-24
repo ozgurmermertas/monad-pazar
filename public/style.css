@@ -1,0 +1,259 @@
+:root {
+  --bg: #f3f4f7;
+  --panel: #ffffff;
+  --ink: #14151a;
+  --muted: #6b7080;
+  --line: #e5e7ed;
+  --soft: #f7f8fa;
+  --buy: #0b8a5b;
+  --buy-soft: #e2f3eb;
+  --sell: #d6453d;
+  --sell-soft: #fbe6e4;
+  --monad: #6e54ff;
+  --monad-soft: #eeebff;
+  --radius: 14px;
+  --sans: 'Bricolage Grotesque', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+button { font: inherit; cursor: pointer; }
+input { font: inherit; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); }
+.label { display: block; font-size: 12px; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--monad); outline-offset: 2px; }
+
+/* ───────── Üst bar ───────── */
+.top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 28px;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark { width: 34px; height: 34px; }
+.mark-ask { fill: var(--sell); }
+.mark-bid { fill: var(--buy); }
+.mark-mid { fill: var(--ink); }
+.brand-name { font-weight: 800; font-size: 26px; letter-spacing: -0.03em; line-height: 1; }
+.brand-sub { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+.ticker { display: flex; align-items: flex-end; gap: 28px; }
+.last .big { font-size: 30px; font-weight: 700; line-height: 1.05; transition: color 0.3s; }
+.last .big.up { color: var(--buy); }
+.last .big.down { color: var(--sell); }
+.tick-stat .num { font-size: 16px; font-weight: 500; }
+.chainstat .num { color: var(--monad); font-weight: 700; }
+
+.me { position: relative; display: flex; align-items: center; gap: 12px; }
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 800; color: #fff; background: var(--monad);
+}
+.me-name { font-weight: 700; line-height: 1.1; }
+.addr {
+  border: 0; background: none; padding: 0;
+  font-family: var(--mono); font-size: 12px; color: var(--muted);
+}
+.addr:hover { color: var(--ink); }
+.bal { display: flex; gap: 16px; padding: 0 6px; border-left: 1px solid var(--line); margin-left: 4px; padding-left: 16px; }
+.bal .num { font-size: 15px; font-weight: 500; }
+
+.popover {
+  position: absolute; right: 0; top: calc(100% + 10px); z-index: 20;
+  width: 330px; padding: 16px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: 0 16px 40px rgba(20, 21, 26, 0.12);
+}
+.pop-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+.pop-row + .pop-row { border-top: 1px solid var(--line); }
+.pop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* ───────── Butonlar ───────── */
+.btn {
+  border: 1.5px solid var(--ink); background: var(--ink); color: #fff;
+  border-radius: 10px; padding: 10px 16px; font-weight: 700;
+  transition: transform 0.08s, opacity 0.15s;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.ghost { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.btn.small { padding: 6px 12px; font-size: 13px; }
+.btn.big { width: 100%; padding: 14px; font-size: 17px; background: var(--monad); border-color: var(--monad); }
+
+/* ───────── Izgara ───────── */
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px minmax(380px, 1fr) 340px;
+  gap: 16px;
+  padding: 14px 24px;
+  min-height: 0;
+}
+.panel { background: var(--panel); border-radius: var(--radius); border: 1px solid var(--line); padding: 14px 16px; }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.panel-head h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.hint { font-size: 12px; color: var(--muted); }
+.center, .right { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* ───────── Emir defteri ───────── */
+.book-cols, .trade-cols {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  font-size: 12px; color: var(--muted); padding: 0 8px 6px;
+}
+.book-cols span:not(:first-child), .trade-cols span:not(:first-child) { text-align: right; }
+.asks, .bids { display: flex; flex-direction: column; gap: 2px; min-height: 208px; }
+.asks { justify-content: flex-end; }
+.lvl {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr;
+  padding: 4px 8px; border-radius: 6px; cursor: pointer;
+  font-family: var(--mono); font-size: 13.5px; font-variant-numeric: tabular-nums;
+}
+.lvl:hover { background: var(--soft); }
+.lvl span { position: relative; z-index: 1; }
+.lvl span:not(:first-child) { text-align: right; }
+.lvl .depth { position: absolute; top: 2px; bottom: 2px; right: 0; border-radius: 4px; z-index: 0; transition: width 0.3s; }
+.asks .lvl span:first-child { color: var(--sell); font-weight: 700; }
+.bids .lvl span:first-child { color: var(--buy); font-weight: 700; }
+.asks .depth { background: var(--sell-soft); }
+.bids .depth { background: var(--buy-soft); }
+.lvl.mine span:first-child::after { content: ''; display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--monad); vertical-align: middle; }
+.lvl.flash { animation: flash 0.9s ease-out; }
+@keyframes flash { from { background: var(--monad-soft); } to { background: transparent; } }
+.spread {
+  margin: 8px 0; padding: 8px; border-radius: 8px; background: var(--soft);
+  display: flex; justify-content: space-between; font-size: 13px; color: var(--muted);
+}
+.spread b { font-family: var(--mono); color: var(--ink); font-size: 16px; }
+.empty-side { text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
+
+/* ───────── Grafik ───────── */
+#chart { width: 100%; height: 150px; display: block; }
+
+/* ───────── Emir formu ───────── */
+.ai { padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ai-label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+.ai-row { display: flex; gap: 8px; }
+.ai-row input {
+  flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid var(--line); background: var(--soft);
+}
+.ai-row input:focus { border-color: var(--monad); outline: none; background: #fff; }
+.ai-out { margin-top: 8px; font-size: 13px; padding: 8px 10px; border-radius: 8px; background: var(--monad-soft); color: #3f2bc0; }
+.ai-out.err { background: var(--sell-soft); color: var(--sell); }
+
+.side-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 4px; background: var(--soft); border-radius: 12px; margin-bottom: 10px; }
+.tab { border: 0; background: transparent; padding: 9px; border-radius: 9px; font-weight: 700; color: var(--muted); }
+.tab.buy.active { background: var(--buy); color: #fff; }
+.tab.sell.active { background: var(--sell); color: #fff; }
+
+#orderForm { display: flex; flex-direction: column; gap: 8px; }
+.field {
+  display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 10px;
+  padding: 4px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+}
+.field:focus-within { border-color: var(--ink); }
+.field span { font-size: 13px; color: var(--muted); }
+.field input { border: 0; outline: 0; padding: 6px 0; font-family: var(--mono); font-size: 18px; text-align: right; background: transparent; min-width: 0; }
+.field em { font-style: normal; font-size: 12px; color: var(--muted); }
+.pcts { display: flex; gap: 6px; }
+.pcts button { flex: 1; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 5px; font-size: 12px; color: var(--muted); }
+.pcts button:hover { color: var(--ink); border-color: var(--ink); }
+.total { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); padding: 2px 2px; }
+.total .num { color: var(--ink); font-weight: 700; }
+.submit { padding: 12px; font-size: 16px; border: 0; }
+.submit.buy { background: var(--buy); }
+.submit.sell { background: var(--sell); }
+.form-msg { min-height: 18px; margin: 0; font-size: 13px; color: var(--muted); }
+.form-msg.err { color: var(--sell); }
+.form-msg.ok { color: var(--buy); }
+
+/* ───────── Son işlemler / emirlerim ───────── */
+.trades { display: flex; flex-direction: column; max-height: 330px; overflow: auto; }
+.trade {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 4px 8px; border-radius: 6px;
+  font-family: var(--mono); font-size: 13px;
+}
+.trade span:not(:first-child) { text-align: right; }
+.trade .up { color: var(--buy); font-weight: 700; }
+.trade .down { color: var(--sell); font-weight: 700; }
+.trade.new { animation: flash 1.2s ease-out; }
+.trade.me span:last-child::before { content: 'sen '; color: var(--monad); font-family: var(--sans); font-size: 11px; font-weight: 700; }
+.myorders { display: flex; flex-direction: column; gap: 6px; max-height: 210px; overflow: auto; }
+.mine-row {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center;
+  padding: 8px 10px; border-radius: 10px; background: var(--soft); font-size: 13px;
+}
+.mine-row .side { font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px; }
+.mine-row .side.buy { background: var(--buy-soft); color: var(--buy); }
+.mine-row .side.sell { background: var(--sell-soft); color: var(--sell); }
+.mine-row .num { font-size: 13px; }
+.mine-row button { border: 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; }
+.mine-row button:hover { color: var(--sell); }
+
+/* ───────── İşlem akışı ───────── */
+.txbar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 24px; background: var(--ink); color: #fff; min-height: 46px;
+}
+.txbar-label { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: #6ff0b4; box-shadow: 0 0 0 0 rgba(111, 240, 180, 0.6); animation: pulse 1.8s infinite; }
+@keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(111, 240, 180, 0); } 100% { box-shadow: 0 0 0 0 rgba(111, 240, 180, 0); } }
+.txlog { display: flex; gap: 10px; overflow: hidden; white-space: nowrap; font-size: 13px; }
+.txlog .muted { color: #9a9fae; }
+.tx {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08); color: #fff; text-decoration: none; animation: slidein 0.35s ease-out;
+}
+.tx b { font-family: var(--mono); color: #b9acff; }
+.tx.pending { color: #c9cbd3; }
+.tx.fail { background: rgba(214, 69, 61, 0.3); }
+@keyframes slidein { from { transform: translateX(-12px); opacity: 0; } }
+
+/* ───────── Başlangıç ───────── */
+.onboard { position: fixed; inset: 0; background: rgba(20, 21, 26, 0.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.onboard-card { width: min(460px, 100%); background: var(--panel); border-radius: 20px; padding: 28px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25); }
+.onboard-card h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: -0.02em; }
+.onboard-card p { color: var(--muted); line-height: 1.5; margin: 0 0 18px; }
+.steps { list-style: none; padding: 0; margin: 0 0 20px; display: flex; flex-direction: column; gap: 10px; }
+.steps li { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 10px; font-weight: 600; }
+.steps .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); }
+.steps li.run .dot { border-color: var(--monad); border-top-color: transparent; animation: spin 0.8s linear infinite; }
+.steps li.done .dot { border-color: var(--buy); background: var(--buy); }
+.steps li.fail .dot { border-color: var(--sell); background: var(--sell); }
+.steps .t { font-family: var(--mono); font-size: 13px; color: var(--monad); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ob-note { font-size: 12px; text-align: center; margin: 12px 0 0 !important; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 60;
+  background: var(--ink); color: #fff; padding: 12px 18px; border-radius: 12px; font-weight: 600;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2); animation: slidein 0.3s ease-out;
+}
+.toast.buy { background: var(--buy); }
+.toast.sell { background: var(--sell); }
+
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 1fr; }
+  .top { grid-template-columns: 1fr; gap: 12px; }
+  .ticker { flex-wrap: wrap; gap: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
