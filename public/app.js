@@ -695,7 +695,19 @@ async function onboard() {
     // 3) Yatır
     stepState('deposit', 'run');
     if (st.bal.monFree + st.bal.monLocked === 0n) {
-      const d = await tx('0,1 MON yatırıldı', 'deposit', [], parseEther('0.1'));
+      // Monad "reserve balance": 10 MON altındaki cüzdan, son ~3 blokta işlem yaptıysa
+      // değer gönderen işlemi geri çevrilir. tTRY işleminden sonra biraz bekle, gerekirse tekrar dene.
+      await new Promise((x) => setTimeout(x, 2500));
+      let d;
+      for (let i = 0; ; i++) {
+        try {
+          d = await tx('0,1 MON yatırıldı', 'deposit', [], parseEther('0.1'));
+          break;
+        } catch (e) {
+          if (i >= 3 || !/geri çevrildi/.test(e.message || '')) throw e;
+          await new Promise((x) => setTimeout(x, 3000));
+        }
+      }
       stepState('deposit', 'done', `${nf(d.ms / 1000, 2)} sn`);
     } else stepState('deposit', 'done', 'var');
     btn.textContent = 'Hazır, başla';
