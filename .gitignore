@@ -3,3 +3,4 @@ node_modules/
 .operator-key.json
 .env
 .env.*
+.bot-keys.json

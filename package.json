@@ -8,7 +8,8 @@
     "start": "node server.mjs",
     "deploy": "node scripts/pazar.mjs deploy",
     "selftest": "node scripts/pazar.mjs selftest",
-    "seed": "node scripts/pazar.mjs seed"
+    "seed": "node scripts/pazar.mjs seed",
+    "bot": "node scripts/bot.mjs"
   },
   "dependencies": {
     "solc": "^0.8.38",
