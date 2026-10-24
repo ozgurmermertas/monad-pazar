@@ -336,6 +336,80 @@ async function cmdDiag() {
   console.log(`\nborsada serbest MON: ${formatEther(mf)}, cüzdan: ${formatEther(await publicClient.getBalance({ address: X.address }))}`);
 }
 
+async function cmdMusluk(amount = '5') {
+  const d = need();
+  const acc = operatorAccount();
+  const content = fs.readFileSync(path.join(ROOT, 'contracts', 'Musluk.sol'), 'utf8');
+  const out = JSON.parse(
+    solc.compile(
+      JSON.stringify({
+        language: 'Solidity',
+        sources: { 'Musluk.sol': { content } },
+        settings: { optimizer: { enabled: true, runs: 200 }, evmVersion: 'paris', outputSelection: { '*': { '*': ['abi', 'evm.bytecode.object'] } } },
+      }),
+    ),
+  );
+  const errs = (out.errors || []).filter((e) => e.severity === 'error');
+  if (errs.length) {
+    for (const e of errs) console.log(e.formattedMessage);
+    process.exit(1);
+  }
+  const ct = out.contracts['Musluk.sol'].Musluk;
+  const value = parseEther(String(amount));
+  const bal = await publicClient.getBalance({ address: acc.address });
+  console.log(`Operatör: ${fmt(bal)} MON. Musluğa ${amount} MON konacak.`);
+  if (bal < value + parseEther('0.5')) {
+    console.log(c.red('Operatörde yeterli MON yok; daha küçük bir miktar dene: node scripts/pazar.mjs musluk 3'));
+    process.exit(1);
+  }
+  const hash = await walletFor(acc).deployContract({ abi: ct.abi, bytecode: `0x${ct.evm.bytecode.object}`, value });
+  const r = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
+  if (r.status !== 'success' || !r.contractAddress) throw new Error(`Musluk yüklenemedi: ${EXPLORER}/tx/${hash}`);
+  const mbal = await publicClient.getBalance({ address: r.contractAddress });
+  d.musluk = { address: r.contractAddress, abi: ct.abi };
+  fs.writeFileSync(DEPLOYMENT_FILE, JSON.stringify(d, null, 2));
+  console.log(c.green(`✓ Musluk yüklendi: ${r.contractAddress} (içinde ${fmt(mbal)} MON)`));
+  console.log(c.green('✓ deployment.json güncellendi.\n'));
+}
+
+// Bot cüzdanlarındaki MON'u operatöre geri topla (emirleri iptal et, borsadan çek, gönder)
+async function cmdTopla() {
+  const d = need();
+  const op = operatorAccount();
+  const file = path.join(ROOT, '.bot-keys.json');
+  if (!fs.existsSync(file)) {
+    console.log('Bot cüzdanı yok (.bot-keys.json bulunamadı).');
+    return;
+  }
+  const keys = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const before = await publicClient.getBalance({ address: op.address });
+  for (const k of keys) {
+    const acc = privateKeyToAccount(k);
+    const w = walletFor(acc);
+    try {
+      const book = await read(d, 'book');
+      for (const o of book.filter((o) => o.owner.toLowerCase() === acc.address.toLowerCase())) await send(w, d, 'cancel', [o.id]);
+      const [monFree] = await read(d, 'balancesOf', [acc.address]);
+      if (monFree > 0n) await send(w, d, 'withdraw', [monFree]);
+      await sleep(2500); // reserve balance: son işlemden sonra birkaç blok bekle
+      const bal = await publicClient.getBalance({ address: acc.address });
+      const fees = await publicClient.estimateFeesPerGas();
+      const cost = 21000n * fees.maxFeePerGas * 2n;
+      if (bal <= cost) {
+        console.log(c.dim(`${acc.address}: boş`));
+        continue;
+      }
+      const hash = await w.sendTransaction({ to: op.address, value: bal - cost, gas: 21000n, maxFeePerGas: fees.maxFeePerGas * 2n, maxPriorityFeePerGas: fees.maxPriorityFeePerGas });
+      const r = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
+      console.log(r.status === 'success' ? c.green(`✓ ${acc.address}: ${fmt(bal - cost)} MON geri alındı`) : c.yellow(`! ${acc.address}: gönderim geri çevrildi`));
+    } catch (e) {
+      console.log(c.yellow(`! ${acc.address}: ${(e.details || e.shortMessage || e.message).split('\n')[0]}`));
+    }
+  }
+  const after = await publicClient.getBalance({ address: op.address });
+  console.log(c.bold(`\nOperatör: ${fmt(before)} → ${fmt(after)} MON\n`));
+}
+
 const [cmd, ...args] = process.argv.slice(2);
 const commands = {
   wallet: cmdWallet,
@@ -346,6 +420,8 @@ const commands = {
   stats: cmdStats,
   fund: () => cmdFund(args[0], args[1]),
   diag: cmdDiag,
+  musluk: () => cmdMusluk(args[0]),
+  topla: cmdTopla,
 };
 if (!commands[cmd]) {
   console.log('Komutlar: wallet | compile | deploy | selftest | seed [ortaFiyatKuruş] | stats | fund <adres> [MON]');

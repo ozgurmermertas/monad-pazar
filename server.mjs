@@ -16,7 +16,7 @@ import { c, EXPLORER, loadEnv, operatorAccount, publicClient, readDeployment, RO
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
 const env = loadEnv();
-const DRIP = parseEther(env.DRIP_MON || '0.6');
+const DRIP = parseEther(env.DRIP_MON || '0.2');
 // Herkese açık sunucuda operatör cüzdanı boşalmasın: saatlik toplam sınır
 const DRIP_MAX_PER_HOUR = Number(env.DRIP_MAX_PER_HOUR || 6);
 const dripLog = []; // zaman damgaları
@@ -76,8 +76,12 @@ async function drip(address) {
     // Monad "reserve balance": operatör 10 MON'un altındayken son ~3 blokta başka işlemi
     // varsa değer transferi geri çevrilir. Geri çevrilirse biraz bekleyip yeniden dene.
     let hash;
+    const m = readDeployment()?.musluk;
     for (let attempt = 1; ; attempt++) {
-      hash = await walletFor(operatorAccount()).sendTransaction({ to: address, value: DRIP });
+      hash = m
+        ? // Musluk sözleşmesinden gönder: operatör yalnızca gas öder, reserve balance kuralına takılmaz
+          await walletFor(operatorAccount()).writeContract({ address: m.address, abi: m.abi, functionName: 'drip', args: [address, DRIP] })
+        : await walletFor(operatorAccount()).sendTransaction({ to: address, value: DRIP });
       const r = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
       if (r.status === 'success') break;
       console.log(c.yellow(`! Damla geri çevrildi (deneme ${attempt}), bekleniyor`));

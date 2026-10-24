@@ -631,7 +631,7 @@ async function onboard() {
     // 1) MON damlası
     stepState('drip', 'run');
     const t0 = performance.now();
-    if (st.walletMon < parseEther('0.3')) {
+    if (st.walletMon < parseEther('0.15')) {
       const res = await fetch('/api/drip', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -642,7 +642,7 @@ async function onboard() {
       // bakiye görünene kadar bekle (en fazla ~20 sn)
       let ok = false;
       for (let i = 0; i < 40; i++) {
-        if ((await pub.getBalance({ address: me })) >= parseEther('0.3')) { ok = true; break; }
+        if ((await pub.getBalance({ address: me })) >= parseEther('0.15')) { ok = true; break; }
         await new Promise((x) => setTimeout(x, 500));
       }
       if (!ok) throw new Error(r.reason || 'Test MON cüzdana ulaşmadı. Sunucu penceresindeki mesaja bak.');
@@ -659,7 +659,7 @@ async function onboard() {
     // 3) Yatır
     stepState('deposit', 'run');
     if (st.bal.monFree + st.bal.monLocked === 0n) {
-      const d = await tx('0,2 MON yatırıldı', 'deposit', [], parseEther('0.2'));
+      const d = await tx('0,1 MON yatırıldı', 'deposit', [], parseEther('0.1'));
       stepState('deposit', 'done', `${nf(d.ms / 1000, 2)} sn`);
     } else stepState('deposit', 'done', 'var');
     btn.textContent = 'Hazır, başla';
