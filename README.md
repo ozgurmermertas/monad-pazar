@@ -18,6 +18,7 @@ Zincir üstü emir defteri Ethereum'da kullanılamıyor: her emir bir işlem ve 
 - Canlı emir defteri, grafik, son işlemler ve her işlemin onay süresi
 - Türkçe emir asistanı (Claude): "piyasadan 0,02 MON al" yaz, emri onayla
 - Alt şeritte canlı Monad blokları; senin işlemlerinin girdiği bloklar mor
+- Kendi MetaMask cüzdanınla bağlan (Monad testnet ağı otomatik eklenir) ya da tek tıkla gömülü demo cüzdanıyla dene
 
 ## Çalıştır
 

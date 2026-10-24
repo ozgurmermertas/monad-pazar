@@ -363,3 +363,6 @@ body {
 .chart-panel .tf button:hover { color: #fff; }
 .chart-panel .tf button.active { background: #fff; color: #181a1f; }
 .center > .order-panel { border-top: 0; }
+
+.top .btn.mm { background: #f6851b; border-color: #f6851b; color: #fff; }
+.top .btn.mm:hover { background: #e2761b; }

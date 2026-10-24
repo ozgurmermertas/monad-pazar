@@ -1,10 +1,10 @@
 // Pazar web arayüzü — Monad testnet üzerinde zincir üstü emir defteri
-import { createPublicClient, createWalletClient, defineChain, formatEther, http, parseEther, parseEventLogs } from 'viem';
+import { createPublicClient, createWalletClient, custom, defineChain, formatEther, http, parseEther, parseEventLogs } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 const RPC = 'https://testnet-rpc.monad.xyz';
-const NAMES = { ayse: 'Ayşe', mehmet: 'Mehmet', ali: 'Ali', zeynep: 'Zeynep' };
-const COLORS = { ayse: '#6e54ff', mehmet: '#0b8a5b', ali: '#d6453d', zeynep: '#e08a00' };
+const NAMES = { ayse: 'Ayşe', mehmet: 'Mehmet', ali: 'Ali', zeynep: 'Zeynep', metamask: 'MetaMask' };
+const COLORS = { ayse: '#6e54ff', mehmet: '#0b8a5b', ali: '#d6453d', zeynep: '#e08a00', metamask: '#f6851b' };
 const LEVELS = 7;
 
 const $ = (id) => document.getElementById(id);
@@ -33,17 +33,53 @@ function loadKey() {
     return generatePrivateKey(); // depolama kapalıysa oturumluk cüzdan
   }
 }
-const account = privateKeyToAccount(loadKey());
-const me = account.address;
-
 const chain = defineChain({
   id: 10143,
   name: 'Monad Testnet',
   nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
   rpcUrls: { default: { http: [RPC] } },
+  blockExplorers: { default: { name: 'Monadscan', url: 'https://testnet.monadscan.com' } },
 });
+
+// MetaMask: ?kim=metamask ile kullanıcının kendi cüzdanı; aksi halde tarayıcıda gömülü demo cüzdanı
+async function connectMetaMask() {
+  const eth = window.ethereum;
+  if (!eth) throw new Error('MetaMask bulunamadı. Tarayıcına MetaMask eklentisini kur.');
+  const [addr] = await eth.request({ method: 'eth_requestAccounts' });
+  const hexId = '0x279f'; // 10143
+  try {
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: hexId }] });
+  } catch (e) {
+    if (e.code === 4902 || /Unrecognized chain/i.test(e.message || '')) {
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [{ chainId: hexId, chainName: 'Monad Testnet', nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 }, rpcUrls: [RPC], blockExplorerUrls: ['https://testnet.monadscan.com'] }],
+      });
+    } else throw e;
+  }
+  eth.on?.('accountsChanged', () => location.reload());
+  eth.on?.('chainChanged', () => location.reload());
+  return addr;
+}
+
+const useMM = kim === 'metamask';
+let mmError = null;
+let account;
+let wallet;
+if (useMM) {
+  try {
+    account = await connectMetaMask();
+    wallet = createWalletClient({ account, chain, transport: custom(window.ethereum) });
+  } catch (e) {
+    mmError = e.message || String(e);
+  }
+}
+if (!wallet) {
+  account = privateKeyToAccount(loadKey());
+  wallet = createWalletClient({ account, chain, transport: http(RPC) });
+}
+const me = typeof account === 'string' ? account : account.address;
 const pub = createPublicClient({ chain, transport: http(RPC), pollingInterval: 250 });
-const wallet = createWalletClient({ account, chain, transport: http(RPC) });
 
 // ───────────────────────── Durum ─────────────────────────
 const st = {
@@ -676,7 +712,10 @@ async function onboard() {
 
 // ───────────────────────── Bağlantılar ─────────────────────────
 function bind() {
-  $('meName').textContent = displayName;
+  $('meName').textContent = useMM && !mmError ? 'MetaMask' : useMM ? 'Sen' : displayName;
+  $('mmBtn').textContent = useMM && !mmError ? 'Demo cüzdan' : 'MetaMask';
+  $('mmBtn').onclick = () => (location.search = useMM && !mmError ? '?kim=ayse' : '?kim=metamask');
+  if (mmError) setTimeout(() => toast(mmError, 'sell'), 600);
   $('avatar').textContent = displayName[0];
   $('avatar').style.background = COLORS[kim] || '#14151a';
   $('meAddr').textContent = short(me);
