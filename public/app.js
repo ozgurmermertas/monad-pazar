@@ -440,7 +440,7 @@ function renderChart() {
   // işlemler: eskiden yeniye, zaman (sn) ve fiyat (tTRY)
   const trades = [...st.trades].reverse().map((t) => ({ t: Number(t.time), p: Number(t.price) / 100 }));
   if (!trades.length) {
-    ctx.fillStyle = '#6b7080';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.textAlign = 'center';
     ctx.fillText('Henüz işlem yok', w / 2, h / 2);
     return;
@@ -468,9 +468,9 @@ function renderChart() {
   const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (h - padT - padB);
 
   // ızgara + fiyat ekseni
-  ctx.strokeStyle = '#eceef3';
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
   ctx.lineWidth = 1;
-  ctx.fillStyle = '#6b7080';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.textAlign = 'left';
   for (let i = 0; i <= 3; i++) {
     const v = lo + ((hi - lo) * i) / 3;
@@ -500,10 +500,10 @@ function renderChart() {
     });
   };
   const up = pts[pts.length - 1].p >= pts[0].p;
-  const color = up ? '#0b8a5b' : '#d6453d';
+  const color = up ? '#3ddc97' : '#ff7a70';
   const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
-  grad.addColorStop(0, up ? 'rgba(11,138,91,0.16)' : 'rgba(214,69,61,0.16)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  grad.addColorStop(0, up ? 'rgba(61,220,151,0.30)' : 'rgba(255,122,112,0.30)');
+  grad.addColorStop(1, 'rgba(61,220,151,0)');
   path();
   ctx.lineTo(x(now), h - padB);
   ctx.lineTo(x(tStart), h - padB);
@@ -534,7 +534,7 @@ function renderChart() {
   ctx.setLineDash([]);
   ctx.fillStyle = color;
   ctx.fillRect(w - padR + 2, ly - 9, padR - 4, 18);
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#0f1e3d';
   ctx.textAlign = 'left';
   ctx.font = '600 11px "Azeret Mono", monospace';
   ctx.fillText(nf(last), w - padR + 7, ly + 4);

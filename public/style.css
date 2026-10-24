@@ -300,3 +300,68 @@ input { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ───────── Mavi tema her yerde ───────── */
+body {
+  background-color: var(--cobalt-deep);
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.06' stroke-width='1'%3E%3Crect x='12' y='12' width='20' height='20'/%3E%3Crect x='12' y='12' width='20' height='20' transform='rotate(45 22 22)'/%3E%3Ccircle cx='22' cy='22' r='4'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse 80% 60% at 70% 0%, #2d5cc9 0%, transparent 60%),
+    linear-gradient(180deg, var(--cobalt) 0%, var(--cobalt-deep) 70%, #0d2156 100%);
+  background-attachment: fixed;
+}
+.top { background: transparent; padding-bottom: 6px; }
+.grid { margin: 10px 24px 14px; box-shadow: 0 30px 70px -30px rgba(5, 12, 35, 0.75); }
+
+/* panel başlıkları: kobalt şerit */
+.panel-head h2 { display: flex; align-items: center; gap: 8px; color: var(--cobalt-deep); }
+.panel-head h2::before {
+  content: ''; flex: 0 0 auto; width: 10px; height: 10px; border-radius: 2px;
+  background: var(--cobalt); transform: rotate(45deg);
+}
+.book-cols, .trade-cols {
+  background: #eef2fb; border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; color: var(--cobalt);
+  font-weight: 500;
+}
+.spread { background: linear-gradient(90deg, var(--cobalt-deep), var(--cobalt)); }
+
+/* defter ve son işlemler sütunlarına çok hafif mavi zemin */
+.book { background: linear-gradient(180deg, #f6f8fd, #ffffff 40%); }
+.right { background: linear-gradient(180deg, #f6f8fd, #ffffff 40%); }
+
+/* emir paneli: mavi çerçeveli asistan kutusu */
+.order-panel { background: linear-gradient(180deg, #edf1fb 0%, #ffffff 170px); }
+.ai {
+  background: #fff; border: 1.5px solid #cdd8f0; border-radius: 16px; padding: 12px 12px 12px;
+  margin-bottom: 14px; border-bottom: 1.5px solid #cdd8f0;
+  box-shadow: 0 10px 24px -18px rgba(29, 63, 149, 0.6);
+}
+.ai-label { color: var(--cobalt-deep); }
+.ai-row input { background: #f6f8fd; }
+.ai-row .btn.ghost { background: var(--cobalt); color: #fff; border-color: var(--cobalt); }
+.ai-row .btn.ghost:hover { background: var(--cobalt-deep); color: #fff; }
+.side-tabs { background: #e3e9f7; }
+.field { border-color: #d9e1f1; }
+.pcts button { border-color: #d9e1f1; color: var(--cobalt); }
+.pcts button:hover { background: #eef2fb; }
+.mine-row { background: #eef2fb; }
+.tf { background: #eef2fb; }
+
+/* alt şerit: koyu kobalt cam */
+.txbar { background: rgba(8, 20, 52, 0.72); backdrop-filter: blur(6px); border-top: 1px solid rgba(255, 255, 255, 0.08); }
+
+/* grafik: gece kobaltı panel */
+.chart-panel {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.05' stroke-width='1'%3E%3Crect x='12' y='12' width='20' height='20'/%3E%3Crect x='12' y='12' width='20' height='20' transform='rotate(45 22 22)'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(160deg, #1a3a8c 0%, #0f2462 100%);
+  color: #fff;
+}
+.chart-panel .panel-head h2 { color: #fff; }
+.chart-panel .panel-head h2::before { background: #9d8cff; }
+.chart-panel .hint { color: rgba(255, 255, 255, 0.6); }
+.chart-panel .tf { background: rgba(255, 255, 255, 0.1); }
+.chart-panel .tf button { color: rgba(255, 255, 255, 0.7); }
+.chart-panel .tf button:hover { color: #fff; }
+.chart-panel .tf button.active { background: #fff; color: var(--cobalt-deep); }
+.center > .order-panel { border-top: 0; }
