@@ -166,6 +166,7 @@ async function tx(label, functionName, args = [], value) {
     const ms = performance.now() - started;
     if (receipt.status !== 'success') throw new Error('İşlem zincirde geri çevrildi.');
     st.confirms.push(ms);
+    myBlocks.add(receipt.blockNumber);
     finishChip(chip, label, ms, hash);
     refresh();
     return { hash, ms, receipt };
@@ -434,7 +435,7 @@ function renderChart() {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
-  ctx.font = '11px "JetBrains Mono", monospace';
+  ctx.font = '11px "Azeret Mono", monospace';
 
   // işlemler: eskiden yeniye, zaman (sn) ve fiyat (tTRY)
   const trades = [...st.trades].reverse().map((t) => ({ t: Number(t.time), p: Number(t.price) / 100 }));
@@ -535,7 +536,7 @@ function renderChart() {
   ctx.fillRect(w - padR + 2, ly - 9, padR - 4, 18);
   ctx.fillStyle = '#fff';
   ctx.textAlign = 'left';
-  ctx.font = 'bold 11px "JetBrains Mono", monospace';
+  ctx.font = '600 11px "Azeret Mono", monospace';
   ctx.fillText(nf(last), w - padR + 7, ly + 4);
   $('chartHint').textContent = `${inside.length} işlem · son ${TF_LABEL[chartTf]}`;
 }
@@ -546,6 +547,31 @@ function render() {
   renderTrades();
   renderMine();
   renderChart();
+}
+
+// ───────────────────────── Blok şeridi ─────────────────────────
+// Monad ~0,4 sn'de bir blok üretir; her yeni blok şeride bir çubuk ekler.
+const myBlocks = new Set();
+let lastBlock = 0n;
+async function pollBlocks() {
+  try {
+    const n = await pub.getBlockNumber({ cacheTime: 0 });
+    if (n > lastBlock) {
+      const box = $('blocks');
+      const from = lastBlock && n - lastBlock < 12n ? lastBlock + 1n : n - 11n;
+      for (let b = from; b <= n; b++) {
+        const el = document.createElement('div');
+        el.className = 'blk';
+        el.dataset.n = b;
+        box.appendChild(el);
+      }
+      while (box.children.length > 22) box.firstChild.remove();
+      lastBlock = n;
+      $('blockNo').textContent = `blok ${n.toLocaleString('tr-TR')}`;
+    }
+    for (const el of $('blocks').children) if (myBlocks.has(BigInt(el.dataset.n))) el.classList.add('mine');
+  } catch {}
+  setTimeout(pollBlocks, 400);
 }
 
 // ───────────────────────── İşlem akışı ve bildirim ─────────────────────────
@@ -752,6 +778,7 @@ async function start() {
   }
   await refresh();
   setInterval(refresh, 1000);
+  pollBlocks();
 }
 
 start();
