@@ -73,9 +73,17 @@ async function drip(address) {
   dripLog.push(Date.now());
   const run = async () => {
     const t = Date.now();
-    const hash = await walletFor(operatorAccount()).sendTransaction({ to: address, value: DRIP });
-    const r = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
-    if (r.status !== 'success') throw new Error(`MON gönderimi geri çevrildi: ${EXPLORER}/tx/${hash}`);
+    // Monad "reserve balance": operatör 10 MON'un altındayken son ~3 blokta başka işlemi
+    // varsa değer transferi geri çevrilir. Geri çevrilirse biraz bekleyip yeniden dene.
+    let hash;
+    for (let attempt = 1; ; attempt++) {
+      hash = await walletFor(operatorAccount()).sendTransaction({ to: address, value: DRIP });
+      const r = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
+      if (r.status === 'success') break;
+      console.log(c.yellow(`! Damla geri çevrildi (deneme ${attempt}), bekleniyor`));
+      if (attempt >= 4) throw new Error(`MON gönderimi geri çevrildi: ${EXPLORER}/tx/${hash}`);
+      await new Promise((x) => setTimeout(x, 2500 * attempt));
+    }
     dripped.set(key, Date.now());
     console.log(c.green('✓ Damla'), c.dim(`${formatEther(DRIP)} MON → ${address} (${Date.now() - t} ms)`));
     return { hash, ms: Date.now() - t, amount: formatEther(DRIP) };
