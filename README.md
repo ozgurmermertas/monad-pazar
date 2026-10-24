@@ -4,6 +4,8 @@ Monad üzerinde tamamen zincir üstü çalışan bir MON/tTRY borsası. Emirler,
 
 Monad Blitz Ankara · 24 Ekim 2026
 
+**Canlı demo:** [monad-pazar.onrender.com](https://monad-pazar.onrender.com/?kim=ayse). İki kullanıcıyla denemek için iki pencerede [`?kim=ayse`](https://monad-pazar.onrender.com/?kim=ayse) ve [`?kim=mehmet`](https://monad-pazar.onrender.com/?kim=mehmet) aç.
+
 **Sözleşme:** [`0x83b2…dfba`](https://testnet.monadscan.com/address/0x83b295c3cfdac57ff8eaec6be9e0a97acca6dfba) (Monad testnet)
 
 ## Neden Monad?
