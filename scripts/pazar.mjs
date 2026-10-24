@@ -73,13 +73,10 @@ async function send(wallet, d, functionName, args = [], value) {
   for (let attempt = 0; ; attempt++) {
     started = Date.now();
     try {
-      hash = await wallet.writeContract({
-        address: d.address,
-        abi: d.abi,
-        functionName,
-        args,
-        ...(value ? { value } : {}),
-      });
+      const req = { address: d.address, abi: d.abi, functionName, args, ...(value ? { value } : {}) };
+      // aynı işlem aynı hash'i üretir ve RPC reddi önbellekte kalabilir → denemede gas'ı 1 artır
+      if (attempt > 0) req.gas = (await publicClient.estimateContractGas({ ...req, account: wallet.account })) + BigInt(attempt);
+      hash = await wallet.writeContract(req);
       if (attempt > 0) console.log(c.dim(' tamam)'));
       break;
     } catch (e) {
@@ -305,6 +302,40 @@ async function cmdFund(to, amount = '0.3') {
   console.log(c.green(`✓ ${amount} MON gönderildi (${secs(Date.now() - t)} sn)`));
 }
 
+async function cmdDiag() {
+  const d = need();
+  const { createWalletClient, http, encodeFunctionData } = await import('viem');
+  const X = privateKeyToAccount(generatePrivateKey());
+  const op = walletFor(operatorAccount());
+  const h = await op.sendTransaction({ to: X.address, value: parseEther('1') });
+  const r = await publicClient.waitForTransactionReceipt({ hash: h, pollingInterval: 250 });
+  console.log(`fonlama 1 MON: ${r.status}  ${X.address}`);
+  await sleep(3000);
+  const rpcs = ['https://testnet-rpc.monad.xyz', 'https://monad-testnet.drpc.org', 'https://rpc.ankr.com/monad_testnet'];
+  const tests = [
+    ['faucet (değersiz)', 'faucet', undefined],
+    ['deposit 0,02', 'deposit', parseEther('0.02')],
+    ['deposit 0,2', 'deposit', parseEther('0.2')],
+  ];
+  for (const [label, fn, value] of tests) {
+    for (const url of rpcs) {
+      const w = createWalletClient({ account: X, chain: monadTestnet, transport: http(url) });
+      try {
+        const req = await w.prepareTransactionRequest({ to: d.address, data: encodeFunctionData({ abi: d.abi, functionName: fn }), ...(value ? { value } : {}) });
+        const hash = await w.sendTransaction(req);
+        const rr = await publicClient.waitForTransactionReceipt({ hash, pollingInterval: 250 });
+        console.log(c.green(`✓ ${label} @ ${url.split('/')[2]}: ${rr.status} (gas ${req.gas}, maxFee ${req.maxFeePerGas})`));
+        await sleep(2500);
+        break;
+      } catch (e) {
+        console.log(c.dim(`✗ ${label} @ ${url.split('/')[2]}: ${(e.details || e.shortMessage || e.message).split('\n')[0]}`));
+      }
+    }
+  }
+  const [mf] = await read(d, 'balancesOf', [X.address]);
+  console.log(`\nborsada serbest MON: ${formatEther(mf)}, cüzdan: ${formatEther(await publicClient.getBalance({ address: X.address }))}`);
+}
+
 const [cmd, ...args] = process.argv.slice(2);
 const commands = {
   wallet: cmdWallet,
@@ -314,6 +345,7 @@ const commands = {
   seed: cmdSeed,
   stats: cmdStats,
   fund: () => cmdFund(args[0], args[1]),
+  diag: cmdDiag,
 };
 if (!commands[cmd]) {
   console.log('Komutlar: wallet | compile | deploy | selftest | seed [ortaFiyatKuruş] | stats | fund <adres> [MON]');

@@ -257,3 +257,10 @@ input { font: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* grafik zaman aralığı */
+.panel-head h2 .hint { font-weight: 400; margin-left: 8px; letter-spacing: 0; }
+.tf { display: flex; gap: 2px; padding: 3px; background: var(--soft); border-radius: 10px; }
+.tf button { border: 0; background: transparent; font: 600 12px 'JetBrains Mono', monospace; color: var(--muted); padding: 4px 9px; border-radius: 7px; cursor: pointer; }
+.tf button:hover { color: var(--ink, #14151a); }
+.tf button.active { background: #fff; color: var(--ink, #14151a); box-shadow: 0 1px 2px rgba(20, 21, 26, 0.08); }

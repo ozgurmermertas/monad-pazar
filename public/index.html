@@ -91,8 +91,10 @@
       <section class="center">
         <div class="panel chart-panel">
           <div class="panel-head">
-            <h2>Fiyat</h2>
-            <span class="hint" id="chartHint">Son 50 işlem</span>
+            <h2>Fiyat <span class="hint" id="chartHint"></span></h2>
+            <div class="tf" id="tf" role="group" aria-label="Zaman aralığı">
+              <button data-tf="60">1dk</button><button data-tf="300" class="active">5dk</button><button data-tf="900">15dk</button><button data-tf="3600">1sa</button>
+            </div>
           </div>
           <canvas id="chart"></canvas>
         </div>
@@ -167,8 +169,8 @@
         </p>
         <ol class="steps" id="steps">
           <li data-step="drip"><span class="dot"></span><span class="txt">Cüzdana test MON gönder</span><span class="t"></span></li>
-          <li data-step="deposit"><span class="dot"></span><span class="txt">0,2 MON'u borsaya yatır</span><span class="t"></span></li>
           <li data-step="faucet"><span class="dot"></span><span class="txt">10.000 test-lira (tTRY) al</span><span class="t"></span></li>
+          <li data-step="deposit"><span class="dot"></span><span class="txt">0,2 MON'u borsaya yatır</span><span class="t"></span></li>
         </ol>
         <button class="btn big" id="obBtn">Hesabımı hazırla</button>
         <p class="ob-note">Test ağıdır; MON ve tTRY'nin parasal değeri yoktur.</p>

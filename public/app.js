@@ -128,7 +128,9 @@ function explain(e) {
   const text = `${e?.shortMessage || ''} ${e?.message || ''}`;
   for (const [k, v] of Object.entries(ERRORS)) if (text.includes(k)) return v;
   if (/insufficient funds/i.test(text)) return 'Cüzdanda işlem ücreti için yeterli MON yok.';
-  return (e?.shortMessage || e?.message || 'İşlem başarısız.').split('\n')[0];
+  console.error(e);
+  const base = (e?.shortMessage || e?.message || 'İşlem başarısız.').split('\n')[0];
+  return e?.details ? `${base} (${String(e.details).slice(0, 120)})` : base;
 }
 
 async function tx(label, functionName, args = [], value) {
@@ -137,22 +139,24 @@ async function tx(label, functionName, args = [], value) {
   try {
     // Monad bakiyeyi birkaç blok gecikmeli durumdan kontrol eder: yeni gelen MON
     // ~1-2 sn görünmeyebilir. "insufficient balance" gelirse kısa bekleyip tekrar dene.
+    // Not: aynı imzalı işlem aynı hash'i üretir ve RPC reddi önbellekte tutabilir;
+    // bu yüzden her yeniden denemede gas limitini 1 artırıp farklı bir işlem gönderiyoruz.
     let hash;
+    let baseGas;
     for (let attempt = 0; ; attempt++) {
       started = performance.now();
       try {
-        hash = await wallet.writeContract({
-          address: st.cfg.address,
-          abi: st.cfg.abi,
-          functionName,
-          args,
-          ...(value ? { value } : {}),
-        });
+        const req = { address: st.cfg.address, abi: st.cfg.abi, functionName, args, ...(value ? { value } : {}) };
+        if (attempt > 0) {
+          baseGas ??= await pub.estimateContractGas({ ...req, account });
+          req.gas = baseGas + BigInt(attempt);
+        }
+        hash = await wallet.writeContract(req);
         break;
       } catch (e) {
         const msg = `${e.details || ''} ${e.shortMessage || ''} ${e.message || ''}`;
-        if (attempt < 6 && /insufficient balance/i.test(msg)) {
-          await new Promise((r) => setTimeout(r, 700));
+        if (attempt < 20 && /insufficient balance/i.test(msg)) {
+          await new Promise((r) => setTimeout(r, 1000));
           continue;
         }
         throw e;
@@ -337,7 +341,7 @@ function renderBook() {
     st.prevLevels.set(key, l.amount);
     const w = Number((l.amount * 1000n) / max) / 10;
     const total = (l.amount * BigInt(l.price)) / 100n;
-    return `<div class="lvl${l.mine ? ' mine' : ''}${changed ? ' flash' : ''}" data-price="${l.price}">
+    return `<div class="lvl${l.mine ? ' mine' : ''}${changed ? ' flash' : ''}" data-price="${l.price}" data-amount="${l.amount}">
       <div class="depth" style="width:${w}%"></div>
       <span>${price(l.price)}</span><span>${mon(l.amount)}</span><span>${tryAmt(total)}</span></div>`;
   };
@@ -415,6 +419,9 @@ function renderHeader() {
   $('lockedTry').textContent = `${tryAmt(st.bal.tryLocked)} tTRY`;
 }
 
+const TF_LABEL = { 60: '1 dakika', 300: '5 dakika', 900: '15 dakika', 3600: '1 saat' };
+let chartTf = 300;
+
 function renderChart() {
   const canvas = $('chart');
   const dpr = window.devicePixelRatio || 1;
@@ -427,26 +434,39 @@ function renderChart() {
   const ctx = canvas.getContext('2d');
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, w, h);
-  const pts = [...st.trades].reverse().map((t) => Number(t.price) / 100);
-  ctx.font = '12px "JetBrains Mono", monospace';
-  if (pts.length < 2) {
+  ctx.font = '11px "JetBrains Mono", monospace';
+
+  // işlemler: eskiden yeniye, zaman (sn) ve fiyat (tTRY)
+  const trades = [...st.trades].reverse().map((t) => ({ t: Number(t.time), p: Number(t.price) / 100 }));
+  if (!trades.length) {
     ctx.fillStyle = '#6b7080';
     ctx.textAlign = 'center';
-    ctx.fillText(pts.length ? 'Grafik için en az iki işlem gerekli' : 'Henüz işlem yok', w / 2, h / 2);
+    ctx.fillText('Henüz işlem yok', w / 2, h / 2);
     return;
   }
-  let lo = Math.min(...pts);
-  let hi = Math.max(...pts);
+  const now = Math.max(Date.now() / 1000, trades[trades.length - 1].t);
+  const t0 = now - chartTf;
+  // pencere başındaki fiyat: pencereden önceki son işlem
+  const before = trades.filter((x) => x.t < t0);
+  const inside = trades.filter((x) => x.t >= t0);
+  const pts = [];
+  if (before.length) pts.push({ t: t0, p: before[before.length - 1].p });
+  pts.push(...inside);
+  if (!pts.length) pts.push({ t: t0, p: trades[trades.length - 1].p });
+  pts.push({ t: now, p: pts[pts.length - 1].p }); // son fiyat şimdiye kadar uzar
+
+  const tStart = pts[0].t;
+  let lo = Math.min(...pts.map((x) => x.p));
+  let hi = Math.max(...pts.map((x) => x.p));
   if (hi - lo < 0.5) {
     hi += 0.25;
     lo -= 0.25;
   }
-  const padL = 8;
-  const padR = 64;
-  const padY = 16;
-  const x = (i) => padL + (i / (pts.length - 1)) * (w - padL - padR);
-  const y = (v) => padY + (1 - (v - lo) / (hi - lo)) * (h - padY * 2);
-  // ızgara
+  const padL = 8, padR = 64, padT = 12, padB = 22;
+  const x = (t) => padL + ((t - tStart) / Math.max(1, now - tStart)) * (w - padL - padR);
+  const y = (v) => padT + (1 - (v - lo) / (hi - lo)) * (h - padT - padB);
+
+  // ızgara + fiyat ekseni
   ctx.strokeStyle = '#eceef3';
   ctx.lineWidth = 1;
   ctx.fillStyle = '#6b7080';
@@ -459,32 +479,65 @@ function renderChart() {
     ctx.stroke();
     ctx.fillText(nf(v), w - padR + 8, y(v) + 4);
   }
-  // alan
-  const up = pts[pts.length - 1] >= pts[0];
+  // zaman ekseni
+  ctx.textAlign = 'center';
+  const fmtT = (t) =>
+    new Date(t * 1000).toLocaleTimeString('tr-TR', chartTf <= 300 ? { hour: '2-digit', minute: '2-digit', second: '2-digit' } : { hour: '2-digit', minute: '2-digit' });
+  for (let i = 0; i <= 4; i++) {
+    const t = tStart + ((now - tStart) * i) / 4;
+    const xx = Math.min(Math.max(x(t), padL + 26), w - padR - 26);
+    ctx.fillText(fmtT(t), xx, h - 6);
+  }
+
+  // basamaklı çizgi: fiyat bir sonraki işleme kadar sabit
+  const path = () => {
+    ctx.beginPath();
+    pts.forEach((pt, i) => {
+      if (!i) return ctx.moveTo(x(pt.t), y(pt.p));
+      ctx.lineTo(x(pt.t), y(pts[i - 1].p));
+      ctx.lineTo(x(pt.t), y(pt.p));
+    });
+  };
+  const up = pts[pts.length - 1].p >= pts[0].p;
   const color = up ? '#0b8a5b' : '#d6453d';
-  const grad = ctx.createLinearGradient(0, padY, 0, h);
+  const grad = ctx.createLinearGradient(0, padT, 0, h - padB);
   grad.addColorStop(0, up ? 'rgba(11,138,91,0.16)' : 'rgba(214,69,61,0.16)');
   grad.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.beginPath();
-  pts.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
-  ctx.lineTo(x(pts.length - 1), h);
-  ctx.lineTo(x(0), h);
+  path();
+  ctx.lineTo(x(now), h - padB);
+  ctx.lineTo(x(tStart), h - padB);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
-  // çizgi
-  ctx.beginPath();
-  pts.forEach((v, i) => (i ? ctx.lineTo(x(i), y(v)) : ctx.moveTo(x(i), y(v))));
+  path();
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.stroke();
-  // son nokta
-  const lx = x(pts.length - 1);
-  const ly = y(pts[pts.length - 1]);
-  ctx.beginPath();
-  ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+  // işlem noktaları
   ctx.fillStyle = color;
-  ctx.fill();
+  for (const pt of inside) {
+    ctx.beginPath();
+    ctx.arc(x(pt.t), y(pt.p), 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // son fiyat etiketi
+  const last = pts[pts.length - 1].p;
+  const ly = y(last);
+  ctx.setLineDash([3, 3]);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, ly);
+  ctx.lineTo(w - padR, ly);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = color;
+  ctx.fillRect(w - padR + 2, ly - 9, padR - 4, 18);
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.font = 'bold 11px "JetBrains Mono", monospace';
+  ctx.fillText(nf(last), w - padR + 7, ly + 4);
+  $('chartHint').textContent = `${inside.length} işlem · son ${TF_LABEL[chartTf]}`;
 }
 
 function render() {
@@ -533,8 +586,8 @@ function toast(text, kind = '') {
 // ───────────────────────── Başlangıç (hesap hazırlama) ─────────────────────────
 function maybeOnboard() {
   const b = st.bal;
-  const empty = b.monFree + b.monLocked === 0n && b.tryFree + b.tryLocked === 0n;
-  if (!empty) return;
+  const missing = b.monFree + b.monLocked === 0n || b.tryFree + b.tryLocked === 0n;
+  if (!missing) return;
   $('obName').textContent = displayName;
   $('onboard').hidden = false;
 }
@@ -560,20 +613,29 @@ async function onboard() {
       });
       const r = await res.json();
       if (!res.ok) throw new Error(r.error || 'MON gönderilemedi');
-      if (r.skipped && st.walletMon < parseEther('0.5')) {
-        // bakiye gelene kadar kısa bekle
-        for (let i = 0; i < 10 && (await pub.getBalance({ address: me })) < parseEther('0.5'); i++) await new Promise((x) => setTimeout(x, 500));
+      // bakiye görünene kadar bekle (en fazla ~20 sn)
+      let ok = false;
+      for (let i = 0; i < 40; i++) {
+        if ((await pub.getBalance({ address: me })) >= parseEther('0.5')) { ok = true; break; }
+        await new Promise((x) => setTimeout(x, 500));
       }
+      if (!ok) throw new Error(r.reason || 'Test MON cüzdana ulaşmadı. Sunucu penceresindeki mesaja bak.');
+      // Monad bakiye kontrolü birkaç blok geriden gelir; kısa pay bırak
+      await new Promise((x) => setTimeout(x, 3000));
     }
     stepState('drip', 'done', `${nf((performance.now() - t0) / 1000, 2)} sn`);
-    // 2) Yatır
-    stepState('deposit', 'run');
-    const d = await tx('0,2 MON yatırıldı', 'deposit', [], parseEther('0.2'));
-    stepState('deposit', 'done', `${nf(d.ms / 1000, 2)} sn`);
-    // 3) tTRY
+    // 2) tTRY (değersiz işlem önce: Monad'da yeni cüzdanın ilk işlemi böyle sorunsuz geçiyor)
     stepState('faucet', 'run');
-    const f = await tx('10.000 tTRY alındı', 'faucet');
-    stepState('faucet', 'done', `${nf(f.ms / 1000, 2)} sn`);
+    if (st.bal.tryFree + st.bal.tryLocked === 0n) {
+      const f = await tx('10.000 tTRY alındı', 'faucet');
+      stepState('faucet', 'done', `${nf(f.ms / 1000, 2)} sn`);
+    } else stepState('faucet', 'done', 'var');
+    // 3) Yatır
+    stepState('deposit', 'run');
+    if (st.bal.monFree + st.bal.monLocked === 0n) {
+      const d = await tx('0,2 MON yatırıldı', 'deposit', [], parseEther('0.2'));
+      stepState('deposit', 'done', `${nf(d.ms / 1000, 2)} sn`);
+    } else stepState('deposit', 'done', 'var');
     btn.textContent = 'Hazır, başla';
     btn.disabled = false;
     btn.onclick = () => ($('onboard').hidden = true);
@@ -616,6 +678,10 @@ function bind() {
     $('price').value = nf(p);
     // satış tarafına tıklayınca al, alış tarafına tıklayınca sat (karşı tarafı al)
     setSide(lvl.parentElement.id === 'asks' ? 'buy' : 'sell');
+    // o fiyattaki toplam miktarı da gir (4 ondalığa yuvarla)
+    const amt = Number(formatEther(BigInt(lvl.dataset.amount || '0')));
+    $('amount').value = nf(Math.floor(amt * 10000) / 10000, 4);
+    updateTotal();
     $('amount').focus();
   };
   $('asks').onclick = clickLevel;
@@ -658,6 +724,13 @@ function bind() {
   };
   $('obBtn').onclick = onboard;
   window.addEventListener('resize', renderChart);
+  $('tf').onclick = (e) => {
+    const b = e.target.closest('button[data-tf]');
+    if (!b) return;
+    chartTf = Number(b.dataset.tf);
+    for (const x of $('tf').querySelectorAll('button')) x.classList.toggle('active', x === b);
+    renderChart();
+  };
   setSide('buy');
 }
 
