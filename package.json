@@ -13,5 +13,8 @@
   "dependencies": {
     "solc": "^0.8.38",
     "viem": "^2.57.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

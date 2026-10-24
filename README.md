@@ -61,6 +61,15 @@ node server.mjs                   # http://localhost:3000/?kim=ayse  ve  ?kim=me
 
 Türkçe emir asistanı için `.env` dosyasına `ANTHROPIC_API_KEY=...` satırını ekle. Anahtar olmadan da her şey çalışır, yalnızca asistan kapalı kalır.
 
+### Canlıya alma (Render)
+
+Depoda `render.yaml` var. Render'da **New → Blueprint** ile bu repoyu seç, iki gizli değişkeni gir:
+
+- `OPERATOR_PRIVATE_KEY`: demo cüzdanlarına test MON'u gönderen operatör cüzdanının anahtarı
+- `ANTHROPIC_API_KEY`: Türkçe emir asistanı için (boş bırakılabilir)
+
+Herkese açık sunucuda operatör cüzdanı ve API kredisi korunsun diye musluk saatte 6 cüzdanla, asistan da IP başına 10 dakikada 12 istekle sınırlı.
+
 ### Monad'a özgü notlar
 
 - Monad, bakiye kontrolünü birkaç blok gecikmeli durum üzerinden yapıyor. Yeni fonlanan bir cüzdanın ilk işlemi kısa süre "insufficient balance" alabiliyor; betik ve arayüz bu durumda işlemi otomatik olarak yeniden deniyor.

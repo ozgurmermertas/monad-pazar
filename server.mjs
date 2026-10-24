@@ -16,7 +16,14 @@ import { c, EXPLORER, loadEnv, operatorAccount, publicClient, readDeployment, RO
 const PORT = Number(process.env.PORT || 3000);
 const PUBLIC = path.join(ROOT, 'public');
 const env = loadEnv();
-const DRIP = parseEther(env.DRIP_MON || '1');
+const DRIP = parseEther(env.DRIP_MON || '0.6');
+// Herkese açık sunucuda operatör cüzdanı boşalmasın: saatlik toplam sınır
+const DRIP_MAX_PER_HOUR = Number(env.DRIP_MAX_PER_HOUR || 6);
+const dripLog = []; // zaman damgaları
+// Yapay zeka: IP başına ve toplam sınır (API kredisi korunur)
+const AI_PER_IP = Number(env.AI_PER_IP_10MIN || 12);
+const AI_MAX_PER_HOUR = Number(env.AI_MAX_PER_HOUR || 120);
+const aiLog = []; // { ip, t }
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -56,6 +63,14 @@ async function drip(address) {
   if (last && Date.now() - last < 60 * 60 * 1000) return { skipped: true, reason: 'Bu cüzdana son bir saatte zaten gönderildi.' };
   const bal = await publicClient.getBalance({ address });
   if (bal >= DRIP / 2n) return { skipped: true, reason: 'Cüzdanda zaten yeterli MON var.' };
+  const hourAgo = Date.now() - 60 * 60 * 1000;
+  while (dripLog.length && dripLog[0] < hourAgo) dripLog.shift();
+  if (dripLog.length >= DRIP_MAX_PER_HOUR) {
+    const e = new Error(`Demo musluğu bu saat için doldu. ${address} adresine https://faucet.monad.xyz üzerinden test MON alabilirsin.`);
+    e.status = 429;
+    throw e;
+  }
+  dripLog.push(Date.now());
   const run = async () => {
     const t = Date.now();
     const hash = await walletFor(operatorAccount()).sendTransaction({ to: address, value: DRIP });
@@ -156,6 +171,13 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/ai/order' && req.method === 'POST') {
       const { text, market } = JSON.parse(await readBody(req));
       if (!text?.trim()) return send(res, 400, { error: 'Boş istek' });
+      const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+      const now = Date.now();
+      while (aiLog.length && aiLog[0].t < now - 60 * 60 * 1000) aiLog.shift();
+      if (aiLog.length >= AI_MAX_PER_HOUR || aiLog.filter((x) => x.ip === ip && x.t > now - 10 * 60 * 1000).length >= AI_PER_IP) {
+        return send(res, 429, { error: 'Asistan şu an çok yoğun, birazdan tekrar dene ya da formu elle doldur.' });
+      }
+      aiLog.push({ ip, t: now });
       const t = Date.now();
       const out = await aiOrder(text, market || {});
       console.log(c.green('✓ Yapay zeka emri'), c.dim(`${Date.now() - t} ms: "${text}" → ${JSON.stringify(out)}`));

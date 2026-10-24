@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: monad-pazar
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: node server.mjs
+    envVars:
+      - key: OPERATOR_PRIVATE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NODE_VERSION
+        value: "22"
